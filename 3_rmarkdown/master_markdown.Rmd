@@ -1,0 +1,596 @@
+---
+title: "Airbnb price analysis in the city of Zurich"
+author: "Mohammed Biya and Jaronimas Snipas"
+date: "31 August 2023"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+always_allow_html: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+```
+
+# 1. Introduction
+
+The main reason for this project is to demonstrate ability to use R to import, clean, transform and present data. By applying our newly gained knowledge for our selected data sets, we are aiming to use it for analysis, model and chart creation for better understanding of data.
+
+For this purpose we focused on the prices of Airbnb listings, burglary rate and average apartment rent prices in the districts of the city of Zurich in 2022.
+
+The main goal is to find out how burglary rate and neighborhood group influences Airbnb rental prices in the districts of Zurich.
+
+For the analysis we used following variables:
+
+* Average rent prices
+* Burglary rate of the districts of Zurich
+* Rental room types
+* Neighborhood group.
+
+# 2. Libraries
+
+```{r libraries, echo = TRUE}
+library(tidyverse) # data cleaning, sorting, structuring and preparation
+library(plotly) # interactive data vizualisation
+```
+
+# 3. Data Collection and Import
+
+* [Airbnb data set](http://insideairbnb.com/get-the-data/) - Quarterly data for the last year for city of Zurich.
+* [Burglary data set](https://www.zh.ch/de/politik-staat/statistik-daten/datenkatalog.html#/datasets/2042@kantonspolizei-kanton-zuerich) - Number of burglaries as recorded in the crime statistics of the Zurich cantonal police.
+* [Rent price data set](https://www.stadt-zuerich.ch/content/prd/de/index/statistik/publikationen-angebote/datenbanken-anwendungen/mietpreiserhebung.html) - The rental price survey is a sample survey that measures the average rental price of rental apartments with two, three or four rooms in the city of Zurich.
+
+```{r working_directory, echo = TRUE, results='hide'}
+# Be aware of working directory to import data sets correctly
+getwd()
+```
+
+
+```{r import}
+ab_listing_0922 <- read.csv("../1_data/listings_29_12_2022.csv", header = TRUE)
+ab_listing_1222 <- read.csv("../1_data/listings_29_12_2022.csv", header = TRUE)
+ab_listing_0323 <- read.csv("../1_data/listings_31_03_2023.csv", header = TRUE)
+ab_listing_0623 <- read.csv("../1_data/listings_29_06_2023.csv", header = TRUE)
+rent <- read.csv("../1_data/rent_2022.csv")
+burglary <- read.csv("../1_data/burglary_rate_2009_2022.csv")
+```
+
+# 4. Data Cleaning and Preparation
+
+## 4.1. Data set of Listings of Airbnb
+
+Firstly, all quarterly data is merged together.
+
+```{r merge, results='hide'}
+# Dimension check
+
+tmp_dimension_table <- data.frame(number.R.C = c("row","col"), 
+                                  dim(ab_listing_0922), 
+                                  dim(ab_listing_1222), 
+                                  dim(ab_listing_0323), 
+                                  dim(ab_listing_0623))
+
+head(tmp_dimension_table, header = TRUE)
+
+```
+
+```{r echo=TRUE, results='hide'}
+
+tmp_ab_combained <- rbind(ab_listing_0922, 
+                          ab_listing_1222,
+                          ab_listing_0323, 
+                          ab_listing_0623)
+```
+
+```{r results='hide'}
+
+head(tmp_ab_combained)
+dim(tmp_ab_combained)
+str(tmp_ab_combained)
+
+```
+
+After merging quarterly data in one data set, we select only the columns of our interest.
+
+```{r echo=TRUE}
+
+tmp_ab_combained_1 <- tmp_ab_combained %>% 
+  select(id, name, neighbourhood_group, neighbourhood, latitude, 
+         longitude, room_type, price)
+```
+
+```{r results='hide'}
+head(tmp_ab_combained_1)
+str(tmp_ab_combained_1)
+dim(tmp_ab_combained_1)
+
+```
+
+
+```{r results='hide'}
+
+# since there is no NA in our selected data. no special treatment is needed
+
+any(is.na(tmp_ab_combained_1))
+sum(is.na(tmp_ab_combained_1))
+
+```
+
+Reviewing combined data frame to inspect for the correct variable classifications and spot any data errors or inconsistencies.
+
+```{r structure, echo=TRUE}
+str(tmp_ab_combained_1)
+```
+
+Since we combined 4 data sets of Airbnb listings, it is quite likely, that in
+the past year there were listings, which appeared in all quarterly lists for the past year.
+They must be detected by listings id and eliminated for further analysis.
+
+```{r duplicates, echo=TRUE, results='hide'}
+tmp_ab_no_duplicates <- tmp_ab_combained_1 %>% 
+  distinct(id, .keep_all = TRUE)
+
+```
+
+```{r results='hide'}
+
+dim(tmp_ab_no_duplicates)
+head(tmp_ab_no_duplicates)
+```
+
+Data set contains little information about hotel and shared rooms. 
+In order to make our data for analysis more consistent, we remove these types of listings from our final cleaned data set.
+
+```{r echo=TRUE, results='hide'}
+room_type_table <-  table(tmp_ab_no_duplicates$room_type)
+room_type_table
+
+ab_final <- tmp_ab_no_duplicates %>% 
+  filter(room_type %in% c("Entire home/apt", "Private room"))
+
+head(ab_final)
+unique(ab_final$room_type)
+
+# checking the data if there is some missing values
+anyNA(ab_final)
+
+```
+
+Quick final glimpse of cleaned data set.
+
+```{r echo=TRUE}
+head(ab_final, n = 1)
+```
+
+
+## 4.2. Data set of burglary rate in Zurich
+
+Reviewing structure of data frame to inspect for the correct variable classifications and spot any data errors or inconsistencies.
+
+```{r burglary, echo=TRUE}
+str(burglary)
+
+```
+
+```{r burglary2, results='hide'}
+head(burglary)
+dim(burglary)
+
+
+# Translating column names from German to English
+colnames(burglary) <- c("Year", "MunicipalityBFSNr", "MunicipalityName", 
+                        "StadtkreisBFSNr","DistrictName", "LawNumber", 
+                        "LawAbk", "Facts","OffencesTotal", 
+                        "OffencesCompleted", "OffencesAttempted", 
+                        "Residents","FrequencyNumber")
+
+# Translating "Facts" column data to English
+# we have 3 levels to translate 
+unique(burglary$Facts)
+
+# creation of a new column to put facts in English 
+burglary$FactsEnglish <- NA
+
+# we use a for loop to translate the facts column  
+for (i in 1:nrow(burglary)) {
+  if (burglary$Facts[i] == "Einbruchdiebstahl") {
+    burglary$FactsEnglish[i] <- "Burglary"
+  } else if (burglary$Facts[i] == "Einschleichdiebstahl") {
+    burglary$FactsEnglish[i] <- "SmashAndGrabTheft"
+  } else {
+    burglary$FactsEnglish[i] <- "TotalCrime"
+  }
+}
+
+```
+
+Filtering for year 2022, city of Zurich, which municipality's number is 261 and category of total crime in the district.
+
+```{r, echo=TRUE}
+burglary_final <- burglary %>% 
+  select(Year, MunicipalityBFSNr, DistrictName, FactsEnglish, 
+         OffencesTotal, Residents) %>% 
+  filter(Year == 2022, 
+         MunicipalityBFSNr == 261, 
+         FactsEnglish == "TotalCrime", 
+         grepl("^Kreis", DistrictName) ) %>% 
+  mutate("BurglariesPerResident" = OffencesTotal/Residents) %>% 
+  arrange(desc(BurglariesPerResident))
+
+```
+
+```{r, results='hide'}
+
+# removing the year col
+burglary_final <- burglary_final %>%
+  select(-Year)
+
+head(burglary_final)
+dim(burglary_final)
+
+# checking the data if there is some missing values
+anyNA(burglary_final)
+
+```
+
+Quick final glimpse of cleaned data set.
+
+```{r echo=TRUE}
+head(burglary_final, n = 1)
+```
+
+
+## 4.3. Data set of apartment rent rate in Zurich
+
+Reviewing structure of data frame to inspect for the correct variable classifications and spot any data errors or inconsistencies.
+
+
+```{r echo=TRUE, results='hide'}
+str(rent)
+
+```
+
+Selecting only the column that we need for our analysis.
+
+```{r echo=TRUE}
+
+rent_final <- rent %>%
+  select(RaumeinheitLang, GliederungLang, ZimmerSort, GemeinnuetzigLang, 
+         EinheitLang, PreisartLang, mean) %>% 
+  filter(grepl("^Kreis", GliederungLang),
+         GemeinnuetzigLang == "Alle Wohnungen",
+         RaumeinheitLang == "Stadtkreise", 
+         PreisartLang == "Netto", 
+         EinheitLang == "Wohnung") %>% 
+  group_by(GliederungLang) %>% 
+  summarise(avg.price = round(mean(mean), 0)) %>% 
+  rename(neighbourhood_group = GliederungLang) %>% 
+  arrange(desc(avg.price))
+
+```
+
+
+```{r results='hide'}
+
+# Quick check in the data 
+
+head(rent_final)
+dim(rent_final)
+str(rent_final)
+unique(rent$RaumeinheitLang)
+
+
+# the goal for this filtering step is to keep only the elements that we need.
+# and calculating the average rent of apartment per neighborhood group
+# checking for missing values
+
+anyNA(rent_final)
+```
+
+Quick final glimpse of cleaned data set.
+
+```{r echo=TRUE}
+head(rent_final, n = 1)
+```
+
+
+## 4.4. Joining cleaned data sets in master data set
+
+We have three cleaned and trimmed data sets. Left_join function is used to merge them together by the name of the district.
+
+
+```{r results='hide'}
+
+# Quick check for col names.
+
+colnames(ab_final)
+colnames(burglary_final)
+colnames(rent_final)
+
+# change the col name of burglary.Zurich.
+
+burglary_final <- burglary_final %>%
+  rename(neighbourhood_group = DistrictName)
+
+colnames(burglary_final)
+
+```
+
+```{r echo=TRUE}
+master_final <- ab_final %>% left_join(burglary_final, 
+                                     by = "neighbourhood_group") %>% 
+  left_join(rent_final, by = "neighbourhood_group")
+
+```
+
+```{r echo=TRUE}
+
+# write.csv(master.final, file = "master.final.csv", row.names = FALSE) #NEW
+
+# Quick check 
+head(master_final)
+```
+
+
+
+```{r results='hide'}
+
+# write.csv(master.final, file = "master.final.csv", row.names = FALSE) #NEW
+
+# Quick check 
+str(master_final)
+dim(master_final)
+any(is.na(master_final))
+```
+
+
+# 5. Data Visualisation
+
+```{r results='hide' }
+
+# prepared data
+head(master_final)
+
+####### DISTRIBUTION OF PRICE PER DISTRICT
+
+summary(master_final$price)
+
+####### Eliminate outlieres from the analysis
+
+less_than_500 <- master_final %>% 
+  filter(price < 500)
+
+```
+
+## 5.1 Price distribution agains district
+
+The violin plot below shows the relationship of neighborhood group to price per night in CHF for two groups entire home/apartment and private room.
+For the group entire home/apartment the shape of Kries 3,7,8 ( skinny on each end and wide in the middle) indicates the price of this type of accommodation  located around the median. The box plot elements show the median of Kries 12 is lower than for another neighborhood group.
+Regarding the private room, we have a distribution shape around the median for Kries 2,4,6,10. Kries 10 has the lowest median price.
+Focusing on the median value, entire home/apartment has a higher median than private room for all neighborhood groups. This is because entire home/apartment are generally more expensive than private room. 
+Also in this case, we use the libraries "ggplot2" and "plotly". In addition, the type of graph that we've selected is the box plot and violin plot. The reason that shows us the distribution of numerical data and skewness. In particular, with the interactive graph, it's possible to visualize the median, quartiles, and outliers.
+
+```{r}
+p <- ggplot(data = less_than_500,
+       mapping = aes(y = price,
+                     x = neighbourhood_group)) +
+  geom_violin(show.legend = FALSE, fill = "gray", alpha = 0.5) +
+  geom_boxplot(fill = "green", alpha = 0.1) +
+  facet_wrap(. ~ room_type)+
+  labs(title = "Distribution of prices by room types and neighbourhood group") +
+  xlab("Neighbourhood Group") +
+  ylab("Price per Night in CHF") +
+  coord_flip() + # NEW
+  scale_y_log10() + #NEW
+  theme_bw()
+ggplotly(p)
+```
+
+## 5.2 Percentage of room type as a function of districts
+
+Across all districts, the dominant type of accommodation offered on Airbnb is entire home/apartment.
+Kries 3 and 4 possess the highest percentage of entire home/apartment while Kries 12 has the smallest share of such a type of accommodation. On the other hand, Kries 4 offers the most private rooms for rent, while Kries 12 offers the fewest. This observation can be explained by the fact that Kries 3 and 4 may be close to the city center or that this district is located in a touristic accommodation area. However, Kries 12 may be located in the inner city of Zurich; it's more of a residential area than a tourist area.
+
+```{r results='hide'}
+###### plot determine the % of room types per neighborhood group
+
+# creating a data frame
+dist_room_neighbourhood <- data.frame(table(master_final$room_type,
+                                            master_final$neighbourhood_group))
+
+# change the column name
+names(dist_room_neighbourhood) <- c("room.type", 
+                                    "neighbourhood_group","frequency")
+
+
+# how to convert frequencies to % 
+dist_room_neighbourhood <- dist_room_neighbourhood %>%
+  mutate(Percentage = round((frequency/sum(frequency)) * 100, digits = 2))
+
+```
+
+
+```{r}
+ggplot(dist_room_neighbourhood, aes(x = reorder(neighbourhood_group,
+                                                -Percentage), 
+                                    y = Percentage, 
+                                    fill = room.type)) + 
+  geom_bar(stat = "identity", position = "dodge") + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ggtitle("Distribution of room type by neighbourhood group in Zurich") +
+  xlab("District") + 
+  ylab("Percentage") +
+  theme_bw() 
+```
+
+## 5.3 Plot the number of accommodation in every neighborhood
+
+The data in the plot illustrates that Langstrasse has the highest number of accommodations, followed by Altstetten and Sihlfeld. These neighborhoods correspond to Kies 4, 9, and 3, respectively. In the other direction, Saatlen, which belongs to Kries 12, has the lowest number of accommodations.
+
+```{r results='hide'}
+#### 1. Plot the number of accommodation in every neighborhood
+
+listing_neighbourhood <- data.frame(table(master_final$neighbourhood))
+
+names(listing_neighbourhood) <- c("neighbourhood","accommodation.number")
+
+listing_neighbourhood <- listing_neighbourhood %>% 
+  arrange(accommodation.number)
+
+head(listing_neighbourhood) 
+str(listing_neighbourhood)
+levels(listing_neighbourhood$neighbourhood)
+
+```
+
+```{r}
+
+
+ggplot(listing_neighbourhood, aes(x = accommodation.number, 
+                                  y = reorder(neighbourhood, 
+                                              accommodation.number))) +
+  geom_col() +
+  ggtitle("Distribution of accommodation per neighbourhood in the city of Zurich") +
+  xlab("accommodation.number") + 
+  ylab("neighbourhood") +
+  theme_bw()
+```
+
+
+## 5.4 Plot burglary rate against district
+
+The burglary rate per neighborhood varies from 0.3 to almost 3 per hundred residents in the area. District number 1 has the highest burglary rate with almost 3 burglaries per 100 residents, which is far above the average burglary rate in other neighborhoods. It could be explained by the fact that in this district the central train station is located, which tends to attract all sorts of crowds, as well as the infamous Langstrasse street, which is packed with special entertainment and activities. 
+
+```{r}
+#Plot burglary rate against district
+
+burglary_final %>% 
+  mutate(order = fct_reorder(neighbourhood_group, 
+                             desc(BurglariesPerResident))) %>% 
+  ggplot(aes(x = order, 
+             y = BurglariesPerResident)) +
+  geom_col() +
+  labs(title = "Total Burglaries Rate by District", 
+       x = "District", 
+       y = "Total Crime per Resident") +
+  theme_bw()
+```
+
+# 6. Fit model
+
+## 6.1 Simple linear model
+
+We aim to conduct a basic linear model analysis to assess whether alterations in burglary rates have a substantial impact on property prices. In essence, we seek to determine if changes in price are linked to burglaries.
+
+```{r fit model1}
+
+model <- lm(data = less_than_500, price ~ BurglariesPerResident)
+summary(model)
+```
+
+According to the model, we have a significant relationship between burglary rates and property prices. To rephrase it, it would mean that variations in safety levels, particularly in terms of burglary incidents, have an impact on property pricing.
+
+```{r fit model2}
+ggplot(data = less_than_500, aes(x = BurglariesPerResident, y = price)) +
+  geom_point() +
+  stat_smooth(method = "lm", col = "red") +
+  scale_x_log10()
+
+```
+
+As the plot shows, the distribution of the point does not follow a linear dispersion. Most likely, aiming for another model will be more adequate.
+
+After all these considerations, we conclude that burglaries Per Resident and price have no relation to causality. Every price depends on other parameters, for example, location and type of accommodation. As a result, the price also depends on it. Moreover, we want to specify an aspect related to the price that will appear frequently in our data. Some prices are very high; they don't reflect reality, so we decided to remove them.
+
+## 6.2 ANOVA model
+
+First of all, we want to perform an ANOVA test to evaluate if changing the burglaries and neighborhood group significantly affects the price. In other words, we want to measure if price variation is influenced by location and safety level.
+
+```{r fit model}
+fit <- aov(price~BurglariesPerResident+neighbourhood_group, data = master_final)
+summary(fit, intercept = TRUE)
+```
+
+The summary result shows that the ANOVA model is significant for burglaries per resident at a significance level of alpha = 0.05, but not for neighborhood group.
+In fact, there is a main effect of burglaries per resident on the price, F(1,2832), p = 2.72e-05.
+However, there is no main effect of neighborhood group on the price, F(1,2832), p = 0.338.
+
+# 7. Chapter of choice
+
+## 7.1 Feature extraction with the help of regex
+
+For the first part of chapter of choice, we decided to extract some information from the column "name", which containes mixed information about the particular listing. Firstly, we spot the pattern, that was repetitive in the column, then with the help of regex we extracted information and enriched our data set with the information of how many bedrooms, beds and bathrooms are in each listing. That was done only with the data of most recent listings data and was not used for further data exploration.  
+
+```{r regex, results='hide'}
+# Extracting information from the column of complicated row
+# for this chapter of choice we decided only use newest data set of Airbnb.
+
+
+head(ab_listing_0623)
+str(ab_listing_0623)
+dim(ab_listing_0623)
+
+
+```
+
+```{r echo=TRUE, results='hide'}
+
+for (i in 1:nrow(ab_listing_0623)){
+  row_words <- unlist(str_split(ab_listing_0623[i, 2], " "))  # Split second 
+  # column's information by space
+  
+  bedroom_idx <- which(str_detect(row_words, "^bedr")) # extract words with bedr
+  beds_idx <- which(str_detect(row_words, "^bed")) # extract words with bed
+  bath_idx <- which(str_detect(row_words, "bath|baths")) # extract words with bath
+  
+  # Check if bedroom indexes are found and populate newly created row
+  if (length(bedroom_idx) > 0){ 
+    ab_listing_0623[i, "NrOfBedrooms"] <- as.numeric(row_words[max(1, bedroom_idx - 1)])
+    # we know, that the index of number is one less than the index of the word that we
+    # are looking for.
+  } else {
+    ab_listing_0623[i, "NrOfBedrooms"] <- NA
+  }
+  
+  # Check if beds indexes are found and populate newly created row
+  if (length(beds_idx) > 0){ 
+    ab_listing_0623[i, "NrOfBeds"] <- as.numeric(row_words[max(1, beds_idx - 1)])
+    # we know, that the index of number is one less than the index of the word that we
+    # are looking for.
+  } else {
+    ab_listing_0623[i, "NrOfBeds"] <- NA
+  }
+  
+  # Check if bath indexes are found and populate newly created row
+  if (length(bath_idx) > 0){ 
+    ab_listing_0623[i, "NrOfBaths"] <- as.numeric(row_words[max(1, bath_idx - 1)])
+    # we know, that the index of number is one less than the index of the word that we
+    # are looking for.
+  } else {
+    ab_listing_0623[i, "NrOfBaths"] <- NA
+  }
+}
+
+```
+
+```{r regex2}
+# Extracting information from the column of complicated row
+# for this chapter of choice we decided only use newest data set of Airbnb.
+
+
+head(ab_listing_0623, n = 1)
+
+```
+
+
+
+
+## 7.2 Interactive map with Leaflet and Shiny
+
+For the second part of chapter of our choice, we decided to create interactive map with Leaflet and Shiny packages. Our data sets consist of complex layers of data, which is easier to explore in interactive manner. This small application made with help of Shiny package. Application could be found in the 4_shinyApp folder separate from this document. Application allows the user to compare various information layers of Airbnb listings, burglary rate and average rent prices in each district or between them. Layout of application is chosen to help user to understand the data better. 
+
+
+
+
+

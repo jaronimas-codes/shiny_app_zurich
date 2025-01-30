@@ -1,0 +1,186 @@
+{
+	"type" : "FeatureCollection",
+	"name" : "stzh.adm_stadtkreise_beschr_p",
+	"features" : [
+		{
+			"type" : "Feature",
+			"geometry" : {
+				"type" : "Point",
+				"coordinates" : [ 8.5319800266, 47.3458196873 ]
+			},
+			"properties" : {
+				"objid" : "1",
+				"bezeichnung" : "Kreis 2",
+				"name" : "2",
+				"ori" : 0,
+				"hali" : "1",
+				"vali" : "2"
+			}
+		},
+		{
+			"type" : "Feature",
+			"geometry" : {
+				"type" : "Point",
+				"coordinates" : [ 8.5578558879, 47.3521329109 ]
+			},
+			"properties" : {
+				"objid" : "2",
+				"bezeichnung" : "Kreis 8",
+				"name" : "8",
+				"ori" : 0,
+				"hali" : "1",
+				"vali" : "2"
+			}
+		},
+		{
+			"type" : "Feature",
+			"geometry" : {
+				"type" : "Point",
+				"coordinates" : [ 8.5254433999, 47.4212437242 ]
+			},
+			"properties" : {
+				"objid" : "3",
+				"bezeichnung" : "Kreis 11",
+				"name" : "11",
+				"ori" : 0,
+				"hali" : "1",
+				"vali" : "2"
+			}
+		},
+		{
+			"type" : "Feature",
+			"geometry" : {
+				"type" : "Point",
+				"coordinates" : [ 8.5743532965, 47.4028865247 ]
+			},
+			"properties" : {
+				"objid" : "4",
+				"bezeichnung" : "Kreis 12",
+				"name" : "12",
+				"ori" : 0,
+				"hali" : "1",
+				"vali" : "2"
+			}
+		},
+		{
+			"type" : "Feature",
+			"geometry" : {
+				"type" : "Point",
+				"coordinates" : [ 8.4995069785, 47.4064859987 ]
+			},
+			"properties" : {
+				"objid" : "5",
+				"bezeichnung" : "Kreis 10",
+				"name" : "10",
+				"ori" : 0,
+				"hali" : "1",
+				"vali" : "2"
+			}
+		},
+		{
+			"type" : "Feature",
+			"geometry" : {
+				"type" : "Point",
+				"coordinates" : [ 8.5466735662, 47.3921918171 ]
+			},
+			"properties" : {
+				"objid" : "6",
+				"bezeichnung" : "Kreis 6",
+				"name" : "6",
+				"ori" : 0,
+				"hali" : "1",
+				"vali" : "2"
+			}
+		},
+		{
+			"type" : "Feature",
+			"geometry" : {
+				"type" : "Point",
+				"coordinates" : [ 8.4823120764, 47.3838972387 ]
+			},
+			"properties" : {
+				"objid" : "7",
+				"bezeichnung" : "Kreis 9",
+				"name" : "9",
+				"ori" : 0,
+				"hali" : "1",
+				"vali" : "2"
+			}
+		},
+		{
+			"type" : "Feature",
+			"geometry" : {
+				"type" : "Point",
+				"coordinates" : [ 8.5199684845, 47.3882165648 ]
+			},
+			"properties" : {
+				"objid" : "8",
+				"bezeichnung" : "Kreis 5",
+				"name" : "5",
+				"ori" : 0,
+				"hali" : "1",
+				"vali" : "2"
+			}
+		},
+		{
+			"type" : "Feature",
+			"geometry" : {
+				"type" : "Point",
+				"coordinates" : [ 8.5189353727, 47.37962371 ]
+			},
+			"properties" : {
+				"objid" : "9",
+				"bezeichnung" : "Kreis 4",
+				"name" : "4",
+				"ori" : 0,
+				"hali" : "1",
+				"vali" : "2"
+			}
+		},
+		{
+			"type" : "Feature",
+			"geometry" : {
+				"type" : "Point",
+				"coordinates" : [ 8.5411201401, 47.3728527515 ]
+			},
+			"properties" : {
+				"objid" : "10",
+				"bezeichnung" : "Kreis 1",
+				"name" : "1",
+				"ori" : 0,
+				"hali" : "1",
+				"vali" : "2"
+			}
+		},
+		{
+			"type" : "Feature",
+			"geometry" : {
+				"type" : "Point",
+				"coordinates" : [ 8.5777873771, 47.3711844355 ]
+			},
+			"properties" : {
+				"objid" : "11",
+				"bezeichnung" : "Kreis 7",
+				"name" : "7",
+				"ori" : 0,
+				"hali" : "1",
+				"vali" : "2"
+			}
+		},
+		{
+			"type" : "Feature",
+			"geometry" : {
+				"type" : "Point",
+				"coordinates" : [ 8.5067775124, 47.3620944311 ]
+			},
+			"properties" : {
+				"objid" : "12",
+				"bezeichnung" : "Kreis 3",
+				"name" : "3",
+				"ori" : 0,
+				"hali" : "1",
+				"vali" : "2"
+			}
+		}
+	]
+}
